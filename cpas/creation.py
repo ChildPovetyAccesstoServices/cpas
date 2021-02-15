@@ -14,8 +14,7 @@ import numpy as np
 
 from .costsurface import lc, r, s, cs
 
-if __name__ == '__main__':
-
+def main():
     start = timer()
 
     # read configuration file
@@ -111,3 +110,6 @@ if __name__ == '__main__':
     print(f'RAM usage: {(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)}')
 
     print(f'Time taken = {end-start}')
+
+if __name__ == '__main__':
+    main()
