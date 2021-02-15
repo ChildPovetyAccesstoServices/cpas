@@ -8,7 +8,6 @@ https://gis.stackexchange.com/questions/234022/resampling-a-raster-from-python-w
 
 # Imports
 import sys
-sys.path.append('/home/s1891967/diss/code/Diss/')
 
 import numpy as np
 from osgeo import gdal, gdalconst
@@ -132,7 +131,7 @@ def slopeimpact(b):
     return (((0.5*(slopespeed(+b)+slopespeed(-b))/slopespeed(0)) * 100))
 
 
-def dem_to_slope_impact(DEM, ta):
+def dem_to_slope_impact(DEM, ta, tempfile='resampleslope.tif'):
 
     """Function to calculate slope impact from DEM
 
@@ -149,17 +148,15 @@ def dem_to_slope_impact(DEM, ta):
         Array of slope impact
     """
 
-    tempstring = 'resampleslope.tif'
-    
     # Resample
     rs_dem = resamplefunc(DEM, ta)
 
     # Calculate Gradient (degrees)
-    calculate_gradient(rs_dem, tempstring)
+    calculate_gradient(rs_dem, tempfile)
 
     # Read slope tiff in 
-    a = tiffHandle(tempstring)
-    a.readTiff(tempstring)
+    a = tiffHandle(tempfile)
+    a.readTiff(tempfile)
 
     # Make over 45 degree slope no data
     slope_arr = toosteep(a.data)
