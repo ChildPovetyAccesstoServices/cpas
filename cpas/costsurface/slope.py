@@ -15,6 +15,8 @@
 #
 # Copyright (C) 2020 cpas team
 
+__all__ = ['computeSlopeImpact']
+
 import numpy, xarray
 
 def computePercentageSlope(dem):

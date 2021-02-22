@@ -15,4 +15,6 @@
 #
 # Copyright (C) 2020 cpas team
 
-pass
+from .landcover import *
+from .roads import *
+from .slope import *

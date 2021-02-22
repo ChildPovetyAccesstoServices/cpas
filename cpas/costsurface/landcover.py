@@ -15,6 +15,8 @@
 #
 # Copyright (C) 2020 cpas team
 
+__all__ = ['readLandcoverSpeedMap','applyLandcoverSpeedMap']
+
 import numpy
 import xarray
 import pandas

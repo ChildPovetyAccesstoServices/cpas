@@ -15,6 +15,8 @@
 #
 # Copyright (C) 2020 cpas team
 
+__all__ = ['readRoadSpeedMap','rasterizeAllRoads']
+
 import numpy
 import xarray
 import pandas
