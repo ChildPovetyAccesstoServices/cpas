@@ -75,9 +75,9 @@ def computeSlopeImpact(dem):
     slopes = xarray.where(slopes>=100,numpy.nan,slopes)
 
     # take the mean speed for both upwards and downwards slope.
-    # relative to going along the flat (0 slope) as a percentage
+    # relative to going along the flat (0 slope)
 
-    slopes = 50*(slopespeed(slopes)+slopespeed(-slopes))/slopespeed(0)
+    slopes = 0.5*(slopespeed(slopes)+slopespeed(-slopes))/slopespeed(0)
 
     return slopes
 
