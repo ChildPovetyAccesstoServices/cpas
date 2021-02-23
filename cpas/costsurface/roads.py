@@ -98,11 +98,11 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
         matched_rt = process.extractOne(rt,road_types)[0]
         road_speed_map_matched[matched_rt] = road_speed_map[rt]
 
-    rcost = rasterizeRoads(roads,landtype,road_speed_map_matched)
+    rcost = rasterizeRoads(roads,landcover,road_speed_map_matched)
     # replace fill values with nans
     rcost = numpy.where(rcost == 0, numpy.nan, rcost)
 
-    speedsurface = xarray.zeros_like(landtype,dtype=numpy.float32)
+    speedsurface = xarray.zeros_like(landcover,dtype=numpy.float32)
     speedsurface.values[0,:,:] = rcost[:,:]
 
     return speedsurface
