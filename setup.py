@@ -11,7 +11,8 @@ setup(name='cpas',
       packages=['cpas','cpas.costsurface'],
       entry_points={
           'console_scripts': [
-              'cpas-create = cpas.creation:main',
+              'cpas-create-old = cpas.creation:main',
+              'cpas-create = cpas.compute:main',
               ],
       },
 )

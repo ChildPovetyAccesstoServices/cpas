@@ -15,6 +15,8 @@ You can install the code into a virtual environment if you wish to:
 python3 -m venv /PATH/TO/VENV --system-site-packages
 # activate it
 . /PATH/TO/VENV/bin/activate
+# you might need to install pyproj
+# pip install -U pyproj
 # install code
 python setup.py install
 # and run it
