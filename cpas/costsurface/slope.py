@@ -87,7 +87,8 @@ if __name__ == '__main__':
     import rioxarray
 
     dem = rioxarray.open_rasterio('/scratch/mhagdorn/cpas/test/inputs/Uganda_SRTM30meters/Uganda_SRTM30meters.tif',masked=True,dtype=numpy.float32)
+    landtype = rioxarray.open_rasterio('/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/Uganda_Sentinel2_LULC2016.tif')
 
-    slope_impact = computeSlopeImpact(dem)
+    slope_impact = computeSlopeImpact(dem).rio.reproject_match(landtype)
 
     slope_impact.rio.to_raster('test3.tif')
