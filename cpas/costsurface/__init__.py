@@ -15,6 +15,6 @@
 #
 # Copyright (C) 2020 cpas team
 
-from .landcover import *
-from .roads import *
-from .slope import *
+from .landcover import *  # noqa: F401 F403
+from .roads import *      # noqa: F401 F403
+from .slope import *      # noqa: F401 F403

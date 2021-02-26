@@ -15,11 +15,12 @@
 #
 # Copyright (C) 2020 cpas team
 
-__all__ = ['readLandcoverSpeedMap','applyLandcoverSpeedMap']
+__all__ = ['readLandcoverSpeedMap', 'applyLandcoverSpeedMap']
 
 import numpy
 import xarray
 import pandas
+
 
 def readLandcoverSpeedMap(fname, landcover='Code',
                           speed='Walking Speed (km/h)',
@@ -49,16 +50,18 @@ def readLandcoverSpeedMap(fname, landcover='Code',
     lc = numpy.array(costs[landcover])
     s = numpy.array(costs[speed])
     if scale:
-        s = (numpy.round(s*scale)).astype(numpy.int64)
-    return (lc,s)
+        s = (numpy.round(s * scale)).astype(numpy.int64)
+    return (lc, s)
 
-def applyLandcoverSpeedMap(landcover: xarray.DataArray,speedmap) -> xarray.DataArray:
+
+def applyLandcoverSpeedMap(landcover: xarray.DataArray,
+                           speedmap) -> xarray.DataArray:
     """convert a landcover surface to a speed surface using a map
 
     Parameters
     ----------
-    landcover:  a 2D xarray containg the landcover 
-    map: a tuple with two arrays containing the landcover type and 
+    landcover:  a 2D xarray containg the landcover
+    map: a tuple with two arrays containing the landcover type and
          associated speed
 
     Returns
@@ -66,31 +69,31 @@ def applyLandcoverSpeedMap(landcover: xarray.DataArray,speedmap) -> xarray.DataA
     an xarray containing the speed surface
     """
 
-    landcover_types,speed_values = speedmap
-    
-    speedsurface = xarray.zeros_like(landcover,dtype=numpy.float32)
+    landcover_types, speed_values = speedmap
+
+    speedsurface = xarray.zeros_like(landcover, dtype=numpy.float32)
     speedsurface.values[:] = numpy.nan
-    
+
     # consider only pixels with interesting data
-    mask = numpy.in1d(landcover.values,landcover_types)
+    mask = numpy.in1d(landcover.values, landcover_types)
     # create index into landcover_types
-    idx = numpy.searchsorted(landcover_types,landcover.values.ravel()[mask])
+    idx = numpy.searchsorted(landcover_types, landcover.values.ravel()[mask])
     # assign speed values
     speedsurface.values.ravel()[mask] = speed_values[idx]
 
     return speedsurface
-    
-    
+
+
 if __name__ == '__main__':
     import rioxarray
 
-    
     lcmap = '/scratch/mhagdorn/cpas/test/inputs/Landcover_Costs.csv'
     speedmap = readLandcoverSpeedMap(lcmap)
 
-    landtype = rioxarray.open_rasterio('/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/Uganda_Sentinel2_LULC2016.tif')
-    
-    speedsurface = applyLandcoverSpeedMap(landtype,speedmap)
+    landtype = rioxarray.open_rasterio(
+        '/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/'
+        'Uganda_Sentinel2_LULC2016.tif')
+
+    speedsurface = applyLandcoverSpeedMap(landtype, speedmap)
 
     task = speedsurface.rio.to_raster('test.tif')
-

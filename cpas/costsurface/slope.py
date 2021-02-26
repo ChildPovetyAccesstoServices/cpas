@@ -17,7 +17,9 @@
 
 __all__ = ['computeSlopeImpact']
 
-import numpy, xarray
+import numpy
+import xarray
+
 
 def computePercentageSlope(dem):
     """compute percentage slope
@@ -35,15 +37,16 @@ def computePercentageSlope(dem):
     dy = dem.differentiate('y')
     # the scaling factor of 111120 converts degrees to metres.
     # this is a good approximation near the equator
-    slope = (dx*dx + dy*dy)**0.5 * 100/111120
+    slope = (dx * dx + dy * dy) ** 0.5 * 100 / 111120
     return slope
+
 
 def slopespeed(slopes):
     """Function to calculate road navigation speed
 
-    See equation 4 from Irmischer and Clarke (2018). 
+    See equation 4 from Irmischer and Clarke (2018).
     https://doi.org/10.1080/15230406.2017.1292150
-    
+
     This models walking speed based on slope.
 
     Parameters
@@ -55,9 +58,12 @@ def slopespeed(slopes):
     0.11 + np.exp(((-(a + 5)**2)/(2*30**2)))
         Result of equation
     """
-    func = lambda x: 0.11 + numpy.exp(((-(x + 5)**2)/(2*30**2)))
-    
-    return xarray.apply_ufunc(func,slopes)
+
+    def _model(x):
+        return 0.11 + numpy.exp(((- (x + 5) ** 2) / (2 * 30 ** 2)))
+
+    return xarray.apply_ufunc(_model, slopes)
+
 
 def computeSlopeImpact(dem):
     """Function to calculate slope impact from DEM
@@ -65,7 +71,7 @@ def computeSlopeImpact(dem):
     Parameters
     ----------
     dem: object holding digital elevation model
-    
+
     Returns
     -------
     array of slope impact
@@ -74,20 +80,25 @@ def computeSlopeImpact(dem):
     slopes = computePercentageSlope(dem)
 
     # mask out slopes above 45 degree, ie 100%
-    slopes = xarray.where(slopes>=100,numpy.nan,slopes)
+    slopes = xarray.where(slopes >= 100, numpy.nan, slopes)
 
     # take the mean speed for both upwards and downwards slope.
     # relative to going along the flat (0 slope)
 
-    slopes = 0.5*(slopespeed(slopes)+slopespeed(-slopes))/slopespeed(0)
+    slopes = 0.5 * (slopespeed(slopes) + slopespeed(-slopes)) / slopespeed(0)
 
     return slopes
+
 
 if __name__ == '__main__':
     import rioxarray
 
-    dem = rioxarray.open_rasterio('/scratch/mhagdorn/cpas/test/inputs/Uganda_SRTM30meters/Uganda_SRTM30meters.tif',masked=True,dtype=numpy.float32)
-    landtype = rioxarray.open_rasterio('/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/Uganda_Sentinel2_LULC2016.tif')
+    dem = rioxarray.open_rasterio(
+        '/scratch/mhagdorn/cpas/test/inputs/Uganda_SRTM30meters/'
+        'Uganda_SRTM30meters.tif', masked=True, dtype=numpy.float32)
+    landtype = rioxarray.open_rasterio(
+        '/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/'
+        'Uganda_Sentinel2_LULC2016.tif')
 
     slope_impact = computeSlopeImpact(dem).rio.reproject_match(landtype)
 

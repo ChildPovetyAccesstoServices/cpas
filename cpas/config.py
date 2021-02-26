@@ -16,7 +16,7 @@
 #
 # Copyright (C) 2020 cpas team
 
-from configobj import ConfigObj, flatten_errors
+from configobj import ConfigObj
 from validate import Validator
 from pathlib import Path
 
@@ -53,19 +53,21 @@ costsurface = string
 costsurface_water = string
 """
 
-cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),list_values=False,_inspec=True)
+cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),
+                         list_values=False, _inspec=True)
 validator = Validator()
+
 
 class CpasConfig:
     def __init__(self):
         self._cfg = ConfigObj(configspec=cpasDefaults)
         self._cfg.validate(validator)
 
-    def read(self,fname:Path):
+    def read(self, fname):
         """read and parse configuration file"""
 
         fname = Path(fname)
-        
+
         if not fname.is_file():
             msg = f'no such configuration file {fname}'
             raise RuntimeError(msg)
@@ -83,53 +85,65 @@ class CpasConfig:
     @property
     def inputbase(self):
         return Path(self.cfg['inputs']['inputbase'])
+
     @property
     def landcover(self):
-        return str(self.inputbase/Path(self.cfg['inputs']['landcover']))
+        return str(self.inputbase / Path(self.cfg['inputs']['landcover']))
+
     @property
     def roads(self):
-        return str(self.inputbase/Path(self.cfg['inputs']['roads']))
+        return str(self.inputbase / Path(self.cfg['inputs']['roads']))
+
     @property
     def dem(self):
-        return str(self.inputbase/Path(self.cfg['inputs']['dem']))
+        return str(self.inputbase / Path(self.cfg['inputs']['dem']))
+
     @property
     def landcover_ws(self):
-        return str(self.inputbase/Path(self.cfg['inputs']['landcover_ws']))
+        return str(self.inputbase / Path(self.cfg['inputs']['landcover_ws']))
+
     @property
     def roads_ws(self):
-        return str(self.inputbase/Path(self.cfg['inputs']['roads_ws']))
+        return str(self.inputbase / Path(self.cfg['inputs']['roads_ws']))
+
     @property
     def child_impact(self):
         return self.cfg['inputs']['child_impact']
+
     @property
     def include_small_paths(self):
         return self.cfg['inputs']['include_small_paths']
+
     @property
     def waterspeed(self):
         return self.cfg['inputs']['waterspeed']
+
     @property
     def outputbase(self):
         return Path(self.cfg['outputs']['outputbase'])
+
     @property
     def costsurface(self):
-        return str(self.outputbase/Path(self.cfg['outputs']['costsurface']))
+        return str(self.outputbase / Path(self.cfg['outputs']['costsurface']))
+
     @property
     def costsurface_water(self):
-        return str(self.outputbase/Path(self.cfg['outputs']['costsurface_water']))
-    
-   
+        return str(self.outputbase / Path(
+            self.cfg['outputs']['costsurface_water']))
+
+
 if __name__ == '__main__':
     import sys
-    from pprint import pprint 
+    from pprint import pprint
 
     cfg = CpasConfig()
 
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         cfg.read(Path(sys.argv[1]))
 
     pprint(cfg.cfg.dict())
 
-    for c in ['landcover','roads','dem','landcover_ws','roads_ws',
-              'child_impact', 'include_small_paths','waterspeed',
-              'costsurface','costsurface_water']:
-        print (c,getattr(cfg,c))
+    for c in ['landcover', 'roads', 'dem', 'landcover_ws', 'roads_ws',
+              'child_impact', 'include_small_paths', 'waterspeed',
+              'costsurface', 'costsurface_water']:
+        print(c, getattr(cfg, c))

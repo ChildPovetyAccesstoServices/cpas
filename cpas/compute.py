@@ -17,12 +17,15 @@
 
 import sys
 
-import rioxarray, fiona
-import xarray,numpy
+import rioxarray
+import fiona
+import xarray
+import numpy
 from . import costsurface
 from .config import CpasConfig
 
-def speed_to_cost(speed,child_impact=1):
+
+def speed_to_cost(speed, child_impact=1):
     """
     convert speed surface to cost surface
 
@@ -30,19 +33,20 @@ def speed_to_cost(speed,child_impact=1):
     ----------
     speed: object containing the speed surface
           in km/h
-    child_impact: factor applied when traveling 
+    child_impact: factor applied when traveling
           with a child (default=1))
 
     Return
     ------
-    cost surface 
+    cost surface
     """
 
     # apply child impact factor and convert to m/s
-    cost = speed*child_impact*1000/3600
+    cost = speed * child_impact * 1000 / 3600
     # compute the costsurface, ie time.
     # the factor 111120 converts degree to m close to the equator
-    return abs(speed.rio.resolution()[0])*111120/cost
+    return abs(speed.rio.resolution()[0]) * 111120 / cost
+
 
 def main():
 
@@ -51,9 +55,9 @@ def main():
 
     # load the landcover - speedmap and the landcover dataset
     lc_speedmap = costsurface.readLandcoverSpeedMap(cfg.landcover_ws)
-    landcover = rioxarray.open_rasterio(cfg.landcover,masked=True)
+    landcover = rioxarray.open_rasterio(cfg.landcover, masked=True)
     # compute the speed surface due to the landcover
-    lws = costsurface.applyLandcoverSpeedMap(landcover,lc_speedmap)
+    lws = costsurface.applyLandcoverSpeedMap(landcover, lc_speedmap)
 
     # load the road - speedmap and the road dataset
     r_speedmap = costsurface.readRoadSpeedMap(cfg.roads_ws)
@@ -61,33 +65,34 @@ def main():
     rws = costsurface.rasterizeAllRoads(roads, landcover, r_speedmap)
 
     # compute the slope impact and resample it
-    dem = rioxarray.open_rasterio(cfg.dem,masked=True).rio.reproject_match(lws)
+    dem = rioxarray.open_rasterio(cfg.dem,
+                                  masked=True).rio.reproject_match(lws)
     slope_impact = costsurface.computeSlopeImpact(dem)
     # make sure coordinates are the same
     # there might be some numerical noise after reprojecting the data
     slope_impact['x'] = lws['x']
     slope_impact['y'] = lws['y']
-    
+
     # combine the two speed surfaces
-    ws = xarray.where(rws.notnull(),rws,lws)
+    ws = xarray.where(rws.notnull(), rws, lws)
 
     # compute cost surface
-    cs = speed_to_cost(ws*slope_impact,cfg.child_impact)
-    
+    cs = speed_to_cost(ws * slope_impact, cfg.child_impact)
+
     # write costsurface
     cs.rio.to_raster(cfg.costsurface)
 
     # consider water being passable
     # 10 is the code for open water
-    water = xarray.where(landcover==10,cfg.waterspeed, numpy.NaN)
+    water = xarray.where(landcover == 10, cfg.waterspeed, numpy.NaN)
     # convert water speed to time
     # 1 as children arnt slower than adults on motor boats...
     water = speed_to_cost(water)
-    cs = xarray.where(water.notnull(),water,cs)
+    cs = xarray.where(water.notnull(), water, cs)
 
     # write output
     cs.rio.to_raster(cfg.costsurface_water)
-                         
-    
+
+
 if __name__ == '__main__':
     main()

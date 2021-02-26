@@ -15,7 +15,7 @@
 #
 # Copyright (C) 2020 cpas team
 
-__all__ = ['readRoadSpeedMap','rasterizeAllRoads']
+__all__ = ['readRoadSpeedMap', 'rasterizeAllRoads']
 
 import numpy
 import xarray
@@ -23,7 +23,8 @@ import pandas
 from fuzzywuzzy import process
 from rasterio import features
 
-def readRoadSpeedMap(fname,road='Feature_Class',
+
+def readRoadSpeedMap(fname, road='Feature_Class',
                      speed='Walking_Speed',
                      dropNaN=True):
     """construct road type to speed map
@@ -44,10 +45,11 @@ def readRoadSpeedMap(fname,road='Feature_Class',
     dictionary mapping road type to travel speed
     """
 
-    costs = pandas.read_csv(fname,index_col=road)
+    costs = pandas.read_csv(fname, index_col=road)
     if dropNaN:
         costs = costs[costs[speed].notna()]
     return costs[speed].to_dict()
+
 
 def rasterizeRoads(roads, landcover, road_speed_map):
     """rasterize roads
@@ -64,16 +66,18 @@ def rasterizeRoads(roads, landcover, road_speed_map):
     """
 
     # construct filter selecting all roads of a particular type
-    filtered = filter(lambda f: f['properties']['tag'] in road_speed_map, roads)             
+    filtered = filter(lambda f: f['properties']['tag'] in road_speed_map,
+                      roads)
 
     speedsurface = features.rasterize(
         ((f['geometry'],
           road_speed_map[f['properties']['tag']]) for f in filtered),
-        out_shape = landcover.rio.shape,
-        transform = landcover.rio.transform(),
-        all_touched = True)
-    
+        out_shape=landcover.rio.shape,
+        transform=landcover.rio.transform(),
+        all_touched=True)
+
     return speedsurface
+
 
 def rasterizeAllRoads(roads, landcover, road_speed_map):
     """rasterize all roads
@@ -88,40 +92,50 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
     -------
     an xarray containing the speed surface
     """
-    
+
     # extract road types from road shapefile
     road_types = set([feature['properties']['tag'] for feature in roads])
-    
-    # create new road speed map matching the keys to the road types in vector layer
+
+    # create new road speed map matching the keys to the road types
+    # in vector layer
     road_speed_map_matched = {}
     for rt in road_speed_map:
-        matched_rt = process.extractOne(rt,road_types)[0]
+        matched_rt = process.extractOne(rt, road_types)[0]
         road_speed_map_matched[matched_rt] = road_speed_map[rt]
 
-    rcost = rasterizeRoads(roads,landcover,road_speed_map_matched)
+    rcost = rasterizeRoads(roads, landcover, road_speed_map_matched)
     # replace fill values with nans
     rcost = numpy.where(rcost == 0, numpy.nan, rcost)
 
-    speedsurface = xarray.zeros_like(landcover,dtype=numpy.float32)
-    speedsurface.values[0,:,:] = rcost[:,:]
+    speedsurface = xarray.zeros_like(landcover, dtype=numpy.float32)
+    speedsurface.values[0, :, :] = rcost[:, :]
 
     return speedsurface
-    
+
+
 if __name__ == '__main__':
     import fiona
     import rioxarray
-    
-    road_speed_map = readRoadSpeedMap('/scratch/mhagdorn/cpas/test/inputs/Road_Costs.csv')
 
-    roads = fiona.open('/scratch/mhagdorn/cpas/test/inputs/OSM_roads/AllRoads.shp')
-    landtype = rioxarray.open_rasterio('/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/Uganda_Sentinel2_LULC2016.tif')
+    road_speed_map = readRoadSpeedMap(
+        '/scratch/mhagdorn/cpas/test/inputs/Road_Costs.csv')
+
+    roads = fiona.open(
+        '/scratch/mhagdorn/cpas/test/inputs/OSM_roads/AllRoads.shp')
+    landtype = rioxarray.open_rasterio(
+        '/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/'
+        'Uganda_Sentinel2_LULC2016.tif')
 
     # extract road types from road shapefile
-    #road_types = set([feature['properties']['tag'] for feature in roads])
-    road_types = {'track_grade2', 'trunk_link', 'track_grade4', 'motorway_link', 'path', 'steps', 'tertiary',
-                  'primary_link', 'service', 'living_street', 'tertiary_link', 'track_grade5', 'primary',
-                  'residential', 'motorway', 'cycleway', 'bridleway', 'unknown', 'track', 'trunk', 'track_grade1',
-                  'unclassified', 'pedestrian', 'secondary_link', 'footway', 'track_grade3', 'secondary'}
+    # road_types = set([feature['properties']['tag'] for feature in roads])
+    road_types = {'track_grade2', 'trunk_link', 'track_grade4',
+                  'motorway_link', 'path', 'steps', 'tertiary',
+                  'primary_link', 'service', 'living_street',
+                  'tertiary_link', 'track_grade5', 'primary',
+                  'residential', 'motorway', 'cycleway', 'bridleway',
+                  'unknown', 'track', 'trunk', 'track_grade1',
+                  'unclassified', 'pedestrian', 'secondary_link',
+                  'footway', 'track_grade3', 'secondary'}
 
     speedsurface = rasterizeAllRoads(roads, landtype, road_speed_map)
 
