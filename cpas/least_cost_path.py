@@ -20,25 +20,14 @@
 # https://scikit-image.org/docs/0.7.0/api/skimage.graph.mcp.html
 
 # Import packages
-import numpy as np
+import sys
+import rioxarray
+import xarray
+import numpy
 from skimage import graph
-import geopandas as gpd
+import geopandas
 import random
-import tifs
-import cs_test
-
-
-def least_cost(cs, startCell, endCell):
-    """Find route and cost from start cell to end cell using cost surface"""
-
-    # Make any values below one equal to no data
-    np.place(cs, cs < 1, -9999)
-
-    # to find path and cost
-    route, cost = graph.mcp.route_through_array(
-        cs, startCell, endCell, fully_connected=True, geometric=True)
-
-    return route, cost
+from .config import CpasConfig
 
 
 def service_area(cs, startCells):
@@ -46,82 +35,94 @@ def service_area(cs, startCells):
 
     # From the cost-surface create a 'landscape graph' object which can then be
     # analysed using least-cost modelling
-    lg = graph.MCP_Geometric(cs, sampling=None)
+    lg = graph.MCP_Geometric(cs.values, sampling=None)
+
+    lcd = xarray.zeros_like(cs, dtype=numpy.float32)
 
     # Calculate the least-cost distance from the start cell to all other cells
     # [0] is returning the cumulative costs rather than the traceback
-    lcd = lg.find_costs(starts=startCells)[0]
+    lcd.values = lg.find_costs(starts=startCells)[0]
 
     return lcd
 
 
-def validate_starts(locs, cs):
-    """validate locations are within extent of cost surface"""
-    health = cs_test.clean_invalid_loc(locs, cs)
+def find_location_cells(health_services, cs):
+    """find cell indices of health service locations
+
+    Parameters
+    ----------
+    health_services: geopandas data frame containing locations
+    cs: costsurface
+    """
 
     start_cells = []
 
-    # validate locations are on passable cells
-    for index, row in health.iterrows():
-        # convert health care lat lon to pixel ref
-        xInds = int(((row.geometry.x - cs.xOrigin)) / cs.pixelWidth)
-        yInds = int((cs.yOrigin - row.geometry.y) / -cs.pixelHeight)
+    # loop over all health service locations
+    longs = cs.get_index('x')
+    lats = cs.get_index('y')
 
-        vals = cs.data[yInds, xInds]
-        # find value for location and where not null
-        if vals == vals:
-            start_cells.append((yInds, xInds))
+    for location in health_services['geometry']:
+        idx_i = longs.get_loc(location.x, method='nearest')
+        idx_j = lats.get_loc(location.y, method='nearest')
+
+        if cs[0, idx_j, idx_i].isnull():
+            # if the cell is not valid check neighbouring cells
+            alternatives = []
+            for j in range(idx_j - 1, idx_j + 2):
+                for i in range(idx_i - 1, idx_i + 2):
+                    if not cs[0, j, i].isnull():
+                        alternatives.append((0, j, i))
+            if len(alternatives) > 0:
+                # select a random neighbour
+                start_cells.append(random.choice(alternatives))
         else:
-            # move to neighbouring cell is passable
-            sq = [(i, j) for i in range(yInds - 1, yInds + 2)
-                  for j in range(xInds - 1, xInds + 2)]
-            gd_sq = [c for c in sq if cs.data[c] == cs.data[c]]
-            if len(gd_sq) > 0:
-                new_cell = random.choice(gd_sq)
-                start_cells.append(new_cell)
+            start_cells.append((0, idx_j, idx_i))
 
     return start_cells
 
 
-if __name__ == "__main__":
+def main():
+    # read configuration
+    cfg = CpasConfig()
+    cfg.read(sys.argv[1])
 
     # import both cost surfaces
     # cost surface
-    cs_fn = '/home/s1891967/diss/Data/Output/cost_surface_200713.tif'
-    cs = tifs.tiffHandle(cs_fn)
-    cs.readTiff(cs_fn)
+    costsurface = rioxarray.open_rasterio(cfg.costsurface, masked=True)
 
-    # water passable cost surface
-    csw_fn = '/home/s1891967/diss/Data/Output/cost_surface_water_200713.tif'
-    csw = tifs.tiffHandle(csw_fn)
-    csw.readTiff(csw_fn)
+    # # import health care locations
+    health = geopandas.read_file(
+        cfg.health_care,
+        bbox=costsurface.rio.bounds())
 
-    # import health care locations
-    health_inp = '/home/s1891967/diss/Data/Input/Health/UgandaClinics.shp'
-    health = gpd.read_file(health_inp)
-
-    # validata health service locations are valid to use with cost surface
-    start_cells = validate_starts(health, cs)
+    # select health service locations that are valid to use with cost surface
+    start_cells = find_location_cells(health, costsurface)
 
     # find costs algorithm does not deal with np.NaN so change these
     # to -9999 in cost surface any negative values are ignored
-    cs.data = np.where(cs.data != cs.data, -9999, cs.data)
+    costsurface = costsurface.fillna(-9999)
+    # cs.data = np.where(cs.data != cs.data, -9999, cs.data)
 
-    # calculate the costs for each square in the grid
-    cs.sa = service_area(cs.data, start_cells)
+    # # calculate the costs for each square in the grid
+    costs = service_area(costsurface, start_cells)
+    costs.rio.to_raster(cfg.cost_path)
 
-    # where impassable infinity is returned as cost
-    # change these to no data for output
-    np.place(cs.sa, np.isinf(cs.sa), np.NaN)
+    # # where impassable infinity is returned as cost
+    # # change these to no data for output
+    # np.place(cs.sa, np.isinf(cs.sa), np.NaN)
 
-    # repeat the above with water passable cost surface
-    start_cells = validate_starts(health, csw)
-    csw.data = np.where(csw.data != csw.data, -9999, csw.data)
-    csw.sa = service_area(csw.data, start_cells)
-    np.place(csw.sa, np.isinf(csw.sa), np.NaN)
+    # # repeat the above with water passable cost surface
+    # start_cells = validate_starts(health, csw)
+    # csw.data = np.where(csw.data != csw.data, -9999, csw.data)
+    # csw.sa = service_area(csw.data, start_cells)
+    # np.place(csw.sa, np.isinf(csw.sa), np.NaN)
 
-    # bring both access layers together for output
-    cs.data = np.where(cs.sa == cs.sa, cs.sa, csw.sa)
+    # # bring both access layers together for output
+    # cs.data = np.where(cs.sa == cs.sa, cs.sa, csw.sa)
 
-    print('Writing tiff')
-    cs.writeTiff('/home/s1891967/diss/Data/Output/ServiceArea.tif')
+    # print('Writing tiff')
+    # cs.writeTiff('/home/s1891967/diss/Data/Output/ServiceArea.tif')
+
+
+if __name__ == "__main__":
+    main()
