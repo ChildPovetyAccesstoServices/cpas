@@ -34,13 +34,14 @@ dem = string
 # walking speed
 landcover_ws = string
 roads_ws = string
+# health care locations
+health_care = string
 
 # factor applied to walking speed when walking with children
 child_impact = float(default=0.78)
 
 # whether to include small paths
 include_small_paths = boolean(default=True)
-
 
 # Water speed for water passable layer
 waterspeed = float(default=1.5)
@@ -51,6 +52,7 @@ waterspeed = float(default=1.5)
 outputbase = string
 costsurface = string
 costsurface_water = string
+cost_path = string
 """
 
 cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),
@@ -107,6 +109,10 @@ class CpasConfig:
         return str(self.inputbase / Path(self.cfg['inputs']['roads_ws']))
 
     @property
+    def health_care(self):
+        return str(self.inputbase / Path(self.cfg['inputs']['health_care']))
+
+    @property
     def child_impact(self):
         return self.cfg['inputs']['child_impact']
 
@@ -130,6 +136,10 @@ class CpasConfig:
     def costsurface_water(self):
         return str(self.outputbase / Path(
             self.cfg['outputs']['costsurface_water']))
+
+    @property
+    def cost_path(self):
+        return str(self.outputbase / Path(self.cfg['outputs']['cost_path']))
 
 
 if __name__ == '__main__':
