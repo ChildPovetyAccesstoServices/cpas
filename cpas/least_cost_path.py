@@ -81,18 +81,22 @@ def find_location_cells(health_services, cs):
     return start_cells
 
 
-def main():
-    # read configuration
-    cfg = CpasConfig()
-    cfg.read(sys.argv[1])
+def compute_cost_path(csname, hname):
+    """compute cost paths
+
+    Parameters
+    ----------
+    csname: name of input costsurface file
+    hname: name of file containing health service locations
+    """
 
     # import both cost surfaces
     # cost surface
-    costsurface = rioxarray.open_rasterio(cfg.costsurface, masked=True)
+    costsurface = rioxarray.open_rasterio(csname, masked=True)
 
     # # import health care locations
     health = geopandas.read_file(
-        cfg.health_care,
+        hname,
         bbox=costsurface.rio.bounds())
 
     # select health service locations that are valid to use with cost surface
@@ -105,23 +109,25 @@ def main():
 
     # # calculate the costs for each square in the grid
     costs = service_area(costsurface, start_cells)
-    costs.rio.to_raster(cfg.cost_path)
 
-    # # where impassable infinity is returned as cost
-    # # change these to no data for output
-    # np.place(cs.sa, np.isinf(cs.sa), np.NaN)
+    costs = xarray.where(numpy.isfinite(costs), costs, numpy.nan)
 
-    # # repeat the above with water passable cost surface
-    # start_cells = validate_starts(health, csw)
-    # csw.data = np.where(csw.data != csw.data, -9999, csw.data)
-    # csw.sa = service_area(csw.data, start_cells)
-    # np.place(csw.sa, np.isinf(csw.sa), np.NaN)
+    return costs
 
-    # # bring both access layers together for output
-    # cs.data = np.where(cs.sa == cs.sa, cs.sa, csw.sa)
 
-    # print('Writing tiff')
-    # cs.writeTiff('/home/s1891967/diss/Data/Output/ServiceArea.tif')
+def main():
+    # read configuration
+    cfg = CpasConfig()
+    cfg.read(sys.argv[1])
+
+    # repeat the above with water passable cost surface
+    cp = compute_cost_path(cfg.costsurface, cfg.health_care)
+    cw = compute_cost_path(cfg.costsurface_water, cfg.health_care)
+
+    # bring both access layers together for output
+    cp = xarray.where(cp.isnull(), cw, cp)
+
+    cp.rio.to_raster(cfg.cost_path)
 
 
 if __name__ == "__main__":
