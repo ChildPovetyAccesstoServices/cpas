@@ -2,6 +2,8 @@ cpas
 ====
 child poverty access to services code
 
+Depending on the size of area under consideration this program can use up a lot of memory.
+
 Installation
 ------------
 On an Ubuntu system you can install the required packages using
