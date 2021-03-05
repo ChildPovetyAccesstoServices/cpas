@@ -53,6 +53,8 @@ outputbase = string
 costsurface = string
 costsurface_water = string
 cost_path = string
+invalid_loc = string(default=invalid_loc.csv)
+invalid_loc_water = string(default=invalid_loc_water.csv)
 """
 
 cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),
@@ -141,6 +143,15 @@ class CpasConfig:
     def cost_path(self):
         return str(self.outputbase / Path(self.cfg['outputs']['cost_path']))
 
+    @property
+    def invalid_loc(self):
+        return str(self.outputbase / Path(self.cfg['outputs']['invalid_loc']))
+
+    @property
+    def invalid_loc_water(self):
+        return str(self.outputbase / Path(
+            self.cfg['outputs']['invalid_loc_water']))
+
 
 if __name__ == '__main__':
     import sys
@@ -155,5 +166,6 @@ if __name__ == '__main__':
 
     for c in ['landcover', 'roads', 'dem', 'landcover_ws', 'roads_ws',
               'child_impact', 'include_small_paths', 'waterspeed',
-              'costsurface', 'costsurface_water']:
+              'costsurface', 'costsurface_water', 'invalid_loc',
+              'invalid_loc_water']:
         print(c, getattr(cfg, c))

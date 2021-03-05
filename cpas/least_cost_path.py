@@ -56,6 +56,7 @@ def find_location_cells(health_services, cs):
     """
 
     start_cells = []
+    status = []
 
     # loop over all health service locations
     longs = cs.get_index('x')
@@ -75,19 +76,24 @@ def find_location_cells(health_services, cs):
             if len(alternatives) > 0:
                 # select a random neighbour
                 start_cells.append(random.choice(alternatives))
+                status.append('m')
+            else:
+                status.append('i')
         else:
             start_cells.append((0, idx_j, idx_i))
+            status.append('v')
 
-    return start_cells
+    return start_cells, status
 
 
-def compute_cost_path(csname, hname):
+def compute_cost_path(csname, hname, invalid_loc):
     """compute cost paths
 
     Parameters
     ----------
     csname: name of input costsurface file
     hname: name of file containing health service locations
+    invalid_loc: name of file for storing invalid locations
     """
 
     # import both cost surfaces
@@ -100,7 +106,15 @@ def compute_cost_path(csname, hname):
         bbox=costsurface.rio.bounds())
 
     # select health service locations that are valid to use with cost surface
-    start_cells = find_location_cells(health, costsurface)
+    start_cells, status = find_location_cells(health, costsurface)
+    health['status'] = status
+    print("found {count[v]} valid locations\n"
+          "moved {count[m]} locations and\n"
+          "found {count[i]} invalid locations".format(
+              count=health.status.value_counts()))
+    with open(invalid_loc, 'w') as invalid_out:
+        for row in health[(health['status'] == 'i')].itertuples():
+            invalid_out.write(f'{row.Long},{row.Lat},"{row.Facility_n}"\n')
 
     # find costs algorithm does not deal with np.NaN so change these
     # to -9999 in cost surface any negative values are ignored
@@ -121,8 +135,9 @@ def main():
     cfg.read(sys.argv[1])
 
     # repeat the above with water passable cost surface
-    cp = compute_cost_path(cfg.costsurface, cfg.health_care)
-    cw = compute_cost_path(cfg.costsurface_water, cfg.health_care)
+    cp = compute_cost_path(cfg.costsurface, cfg.health_care, cfg.invalid_loc)
+    cw = compute_cost_path(cfg.costsurface_water, cfg.health_care,
+                           cfg.invalid_loc_water)
 
     # bring both access layers together for output
     cp = xarray.where(cp.isnull(), cw, cp)
