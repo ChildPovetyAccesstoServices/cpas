@@ -55,6 +55,12 @@ costsurface_water = string
 cost_path = string
 invalid_loc = string(default=invalid_loc.csv)
 invalid_loc_water = string(default=invalid_loc_water.csv)
+
+# by default the maximum road speed is taken for each pixel. You can speed up
+# the road rasterisation process and reduce memory usage by setting this value
+# to False. All roads are processed in no particular order thus some cells
+# might end up with a slower speed.
+take_max_road_speed = bool(default=True)
 """
 
 cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),
@@ -152,6 +158,10 @@ class CpasConfig:
         return str(self.outputbase / Path(
             self.cfg['outputs']['invalid_loc_water']))
 
+    @property
+    def take_max_road_speed(self):
+        return self.cfg['outputs']['take_max_road_speed']
+
 
 if __name__ == '__main__':
     import sys
@@ -167,5 +177,5 @@ if __name__ == '__main__':
     for c in ['landcover', 'roads', 'dem', 'landcover_ws', 'roads_ws',
               'child_impact', 'include_small_paths', 'waterspeed',
               'costsurface', 'costsurface_water', 'invalid_loc',
-              'invalid_loc_water']:
+              'invalid_loc_water', 'take_max_road_speed']:
         print(c, getattr(cfg, c))

@@ -79,7 +79,7 @@ def rasterizeRoads(roads, landcover, road_speed_map):
     return speedsurface
 
 
-def rasterizeAllRoads(roads, landcover, road_speed_map):
+def rasterizeAllRoads(roads, landcover, road_speed_map, maxspeed=True):
     """rasterize all roads
 
     Parameters
@@ -87,6 +87,8 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
     roads: roads vector layer
     landcover: xarry used for creating empty array
     road_speed_map: pandas series containing speeds
+    maxspeed: when set to False road types are not ordered and slower
+              road speeds might override faster speeds
 
     Returns
     -------
@@ -104,12 +106,46 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
         idx[i] = matched_rt
     road_speed_map.index = idx
 
-    rcost = rasterizeRoads(roads, landcover, road_speed_map.to_dict())
+    if maxspeed:
+        rcost = rasterizeAllRoadsMax(roads, landcover, road_speed_map)
+    else:
+        rcost = rasterizeRoads(roads, landcover, road_speed_map.to_dict())
+
     # replace fill values with nans
     rcost = numpy.where(rcost == 0, numpy.nan, rcost)
 
     speedsurface = xarray.zeros_like(landcover, dtype=numpy.float32)
     speedsurface.values[0, :, :] = rcost[:, :]
+
+    return speedsurface
+
+
+def rasterizeAllRoadsMax(roads, landcover, road_speed_map):
+    """rasterize all roads
+
+    This version takes the largest speed when a pixel contains
+    multiple roads
+
+    Parameters
+    ----------
+    roads: roads vector layer
+    landcover: xarry used for creating empty array
+    road_speed_map: dictionary mapping road type to travel speed
+
+    Returns
+    -------
+    a numpy arrray containing the speed surface
+    """
+
+    speedsurface = numpy.zeros(landcover.shape[1:], dtype=numpy.float32)
+
+    # loop over unique speed values to group roads by speed
+    for speed in road_speed_map.unique():
+        # select all roads with that speed
+        selected_roads = road_speed_map[road_speed_map == speed]
+        rcost = rasterizeRoads(roads, landcover, selected_roads.to_dict())
+        # take max values
+        speedsurface = numpy.maximum(speedsurface, rcost)
 
     return speedsurface
 
