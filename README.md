@@ -26,10 +26,30 @@ python setup.py install
 # and run it
 cpas-create CFG
 cpas-path CFG
+cpas-plot CFG
 ```
 
 You can also run the programs directly without having to install them first:
 ```
 python3 -m cpas.creation CFG
 python3 -m cpas.least_cost_path CFG
+python3 -m cpas.plot CFG
 ```
+
+The plotting program has various command line options:
+```
+usage: plot.py [-h] [-s GEOTIFF] [-l] [-o FILE] CFG
+
+positional arguments:
+  CFG                   name of configuration file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s GEOTIFF, --speed-surface GEOTIFF
+                        load speed surface from GEOTIFF
+  -l, --show-health-services
+                        show locations of helth services
+  -o FILE, --output FILE
+                        save figure to FILE
+```
+

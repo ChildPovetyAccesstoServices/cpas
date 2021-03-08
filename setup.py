@@ -13,6 +13,7 @@ setup(name='cpas',
           'console_scripts': [
               'cpas-create = cpas.compute:main',
               'cpas-path = cpas.least_cost_path:main',
+              'cpas-plot = cpas.plot:main',
           ],
       },
       )

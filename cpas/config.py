@@ -61,6 +61,10 @@ invalid_loc_water = string(default=invalid_loc_water.csv)
 # to False. All roads are processed in no particular order thus some cells
 # might end up with a slower speed.
 take_max_road_speed = bool(default=True)
+
+[plotting]
+# map projection for plotting
+epsg_code = string(default=32635)
 """
 
 cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),
@@ -162,6 +166,10 @@ class CpasConfig:
     def take_max_road_speed(self):
         return self.cfg['outputs']['take_max_road_speed']
 
+    @property
+    def epsg_code(self):
+        return self.cfg['plotting']['epsg_code']
+
 
 if __name__ == '__main__':
     import sys
@@ -177,5 +185,5 @@ if __name__ == '__main__':
     for c in ['landcover', 'roads', 'dem', 'landcover_ws', 'roads_ws',
               'child_impact', 'include_small_paths', 'waterspeed',
               'costsurface', 'costsurface_water', 'invalid_loc',
-              'invalid_loc_water', 'take_max_road_speed']:
+              'invalid_loc_water', 'take_max_road_speed', 'epsg_code']:
         print(c, getattr(cfg, c))
