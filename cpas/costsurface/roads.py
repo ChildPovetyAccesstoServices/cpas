@@ -42,13 +42,13 @@ def readRoadSpeedMap(fname, road='Feature_Class',
 
     Returns
     -------
-    dictionary mapping road type to travel speed
+    a pandas series containing speeds
     """
 
     costs = pandas.read_csv(fname, index_col=road)
     if dropNaN:
         costs = costs[costs[speed].notna()]
-    return costs[speed].to_dict()
+    return costs[speed]
 
 
 def rasterizeRoads(roads, landcover, road_speed_map):
@@ -86,7 +86,7 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
     ----------
     roads: roads vector layer
     landcover: xarry used for creating empty array
-    road_speed_map: dictionary mapping road type to travel speed
+    road_speed_map: pandas series containing speeds
 
     Returns
     -------
@@ -96,14 +96,15 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
     # extract road types from road shapefile
     road_types = set([feature['properties']['tag'] for feature in roads])
 
-    # create new road speed map matching the keys to the road types
-    # in vector layer
-    road_speed_map_matched = {}
-    for rt in road_speed_map:
+    # modify index so that it matches the road types in the vector layer
+    idx = road_speed_map.index.to_list()
+    for i, rt in enumerate(idx):
         matched_rt = process.extractOne(rt, road_types)[0]
-        road_speed_map_matched[matched_rt] = road_speed_map[rt]
+        print(f'using matched road type {matched_rt} for {rt}')
+        idx[i] = matched_rt
+    road_speed_map.index = idx
 
-    rcost = rasterizeRoads(roads, landcover, road_speed_map_matched)
+    rcost = rasterizeRoads(roads, landcover, road_speed_map.to_dict())
     # replace fill values with nans
     rcost = numpy.where(rcost == 0, numpy.nan, rcost)
 
