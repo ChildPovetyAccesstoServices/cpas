@@ -116,27 +116,17 @@ def rasterizeAllRoads(roads, landcover, road_speed_map):
 if __name__ == '__main__':
     import fiona
     import rioxarray
+    from cpas.config import CpasConfig
+    import sys
 
-    road_speed_map = readRoadSpeedMap(
-        '/scratch/mhagdorn/cpas/test/inputs/Road_Costs.csv')
+    cfg = CpasConfig()
+    cfg.read(sys.argv[1])
 
-    roads = fiona.open(
-        '/scratch/mhagdorn/cpas/test/inputs/OSM_roads/AllRoads.shp')
-    landtype = rioxarray.open_rasterio(
-        '/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/'
-        'Uganda_Sentinel2_LULC2016.tif')
+    road_speed_map = readRoadSpeedMap(cfg.roads_ws)
 
-    # extract road types from road shapefile
-    # road_types = set([feature['properties']['tag'] for feature in roads])
-    road_types = {'track_grade2', 'trunk_link', 'track_grade4',
-                  'motorway_link', 'path', 'steps', 'tertiary',
-                  'primary_link', 'service', 'living_street',
-                  'tertiary_link', 'track_grade5', 'primary',
-                  'residential', 'motorway', 'cycleway', 'bridleway',
-                  'unknown', 'track', 'trunk', 'track_grade1',
-                  'unclassified', 'pedestrian', 'secondary_link',
-                  'footway', 'track_grade3', 'secondary'}
+    roads = fiona.open(cfg.roads)
+    landtype = rioxarray.open_rasterio(cfg.landcover, masked=True)
 
     speedsurface = rasterizeAllRoads(roads, landtype, road_speed_map)
 
-    speedsurface.rio.to_raster('test2.tif')
+    speedsurface.rio.to_raster('roads_test.tif')

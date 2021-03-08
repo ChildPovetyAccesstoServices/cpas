@@ -92,14 +92,15 @@ def computeSlopeImpact(dem):
 
 if __name__ == '__main__':
     import rioxarray
+    from cpas.config import CpasConfig
+    import sys
 
-    dem = rioxarray.open_rasterio(
-        '/scratch/mhagdorn/cpas/test/inputs/Uganda_SRTM30meters/'
-        'Uganda_SRTM30meters.tif', masked=True, dtype=numpy.float32)
-    landtype = rioxarray.open_rasterio(
-        '/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/'
-        'Uganda_Sentinel2_LULC2016.tif')
+    cfg = CpasConfig()
+    cfg.read(sys.argv[1])
+
+    dem = rioxarray.open_rasterio(cfg.dem, masked=True)
+    landtype = rioxarray.open_rasterio(cfg.landcover, masked=True)
 
     slope_impact = computeSlopeImpact(dem).rio.reproject_match(landtype)
 
-    slope_impact.rio.to_raster('test3.tif')
+    slope_impact.rio.to_raster('slope_test.tif')

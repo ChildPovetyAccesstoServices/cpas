@@ -86,14 +86,16 @@ def applyLandcoverSpeedMap(landcover: xarray.DataArray,
 
 if __name__ == '__main__':
     import rioxarray
+    from cpas.config import CpasConfig
+    import sys
 
-    lcmap = '/scratch/mhagdorn/cpas/test/inputs/Landcover_Costs.csv'
-    speedmap = readLandcoverSpeedMap(lcmap)
+    cfg = CpasConfig()
+    cfg.read(sys.argv[1])
 
-    landtype = rioxarray.open_rasterio(
-        '/scratch/mhagdorn/cpas/test/inputs/UgandaLandCover/'
-        'Uganda_Sentinel2_LULC2016.tif')
+    speedmap = readLandcoverSpeedMap(cfg.landcover_ws)
+
+    landtype = rioxarray.open_rasterio(cfg.landcover, masked=True)
 
     speedsurface = applyLandcoverSpeedMap(landtype, speedmap)
 
-    task = speedsurface.rio.to_raster('test.tif')
+    task = speedsurface.rio.to_raster('landcover_test.tif')
