@@ -100,7 +100,7 @@ def compute_cost_path(csname, hname, invalid_loc):
     # cost surface
     costsurface = rioxarray.open_rasterio(csname, masked=True)
 
-    # # import health care locations
+    # import health care locations
     health = geopandas.read_file(
         hname,
         bbox=costsurface.rio.bounds())
