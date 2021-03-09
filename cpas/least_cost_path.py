@@ -108,10 +108,13 @@ def compute_cost_path(csname, hname, invalid_loc):
     # select health service locations that are valid to use with cost surface
     start_cells, status = find_location_cells(health, costsurface)
     health['status'] = status
-    print("found {count[v]} valid locations\n"
-          "moved {count[m]} locations and\n"
-          "found {count[i]} invalid locations".format(
-              count=health.status.value_counts()))
+    count = health.status.value_counts()
+    if 'v' in count:
+        print(f"found {count['v']} valid locations")
+    if 'm' in count:
+        print(f"moved {count['m']} locations")
+    if 'i' in count:
+        print(f"found {count['i']} invalid locations")
     with open(invalid_loc, 'w') as invalid_out:
         for row in health[(health['status'] == 'i')].itertuples():
             invalid_out.write(f'{row.Long},{row.Lat},"{row.Facility_n}"\n')
