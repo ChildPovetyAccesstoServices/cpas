@@ -46,23 +46,23 @@ def service_area(cs, startCells):
     return lcd
 
 
-def find_location_cells(health_services, cs):
-    """find cell indices of health service locations
+def find_location_cells(destinations, cs):
+    """find cell indices of destination locations
 
     Parameters
     ----------
-    health_services: geopandas data frame containing locations
+    destinations: geopandas data frame containing locations
     cs: costsurface
     """
 
     start_cells = []
     status = []
 
-    # loop over all health service locations
+    # loop over all destination locations
     longs = cs.get_index('x')
     lats = cs.get_index('y')
 
-    for location in health_services['geometry']:
+    for location in destinations['geometry']:
         idx_i = longs.get_loc(location.x, method='nearest')
         idx_j = lats.get_loc(location.y, method='nearest')
 
@@ -86,13 +86,13 @@ def find_location_cells(health_services, cs):
     return start_cells, status
 
 
-def compute_cost_path(csname, hname, invalid_loc):
+def compute_cost_path(csname, dname, invalid_loc):
     """compute cost paths
 
     Parameters
     ----------
     csname: name of input costsurface file
-    hname: name of file containing health service locations
+    dname: name of file containing destination locations
     invalid_loc: name of file for storing invalid locations
     """
 
@@ -100,15 +100,15 @@ def compute_cost_path(csname, hname, invalid_loc):
     # cost surface
     costsurface = rioxarray.open_rasterio(csname, masked=True)
 
-    # import health care locations
-    health = geopandas.read_file(
-        hname,
+    # import destination locations
+    destinations = geopandas.read_file(
+        dname,
         bbox=costsurface.rio.bounds())
 
-    # select health service locations that are valid to use with cost surface
-    start_cells, status = find_location_cells(health, costsurface)
-    health['status'] = status
-    count = health.status.value_counts()
+    # select destination locations that are valid to use with cost surface
+    start_cells, status = find_location_cells(destinations, costsurface)
+    destinations['status'] = status
+    count = destinations.status.value_counts()
     if 'v' in count:
         print(f"found {count['v']} valid locations")
     if 'm' in count:
@@ -116,7 +116,7 @@ def compute_cost_path(csname, hname, invalid_loc):
     if 'i' in count:
         print(f"found {count['i']} invalid locations")
     with open(invalid_loc, 'w') as invalid_out:
-        for row in health[(health['status'] == 'i')].itertuples():
+        for row in destinations[(destinations['status'] == 'i')].itertuples():
             invalid_out.write(f'{row.Long},{row.Lat},"{row.Facility_n}"\n')
 
     # find costs algorithm does not deal with np.NaN so change these
@@ -138,8 +138,8 @@ def main():
     cfg.read(sys.argv[1])
 
     # repeat the above with water passable cost surface
-    cp = compute_cost_path(cfg.costsurface, cfg.health_care, cfg.invalid_loc)
-    cw = compute_cost_path(cfg.costsurface_water, cfg.health_care,
+    cp = compute_cost_path(cfg.costsurface, cfg.destinations, cfg.invalid_loc)
+    cw = compute_cost_path(cfg.costsurface_water, cfg.destinations,
                            cfg.invalid_loc_water)
 
     # bring both access layers together for output

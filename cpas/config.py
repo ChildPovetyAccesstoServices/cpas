@@ -34,8 +34,8 @@ dem = string
 # walking speed
 landcover_ws = string
 roads_ws = string
-# health care locations
-health_care = string
+# destination locations such as health care centres
+destinations = string
 
 # factor applied to walking speed when walking with children
 child_impact = float(default=0.78)
@@ -121,8 +121,8 @@ class CpasConfig:
         return str(self.inputbase / Path(self.cfg['inputs']['roads_ws']))
 
     @property
-    def health_care(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['health_care']))
+    def destinations(self):
+        return str(self.inputbase / Path(self.cfg['inputs']['destinations']))
 
     @property
     def child_impact(self):

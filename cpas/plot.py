@@ -29,9 +29,9 @@ def main():
                         help="name of configuration file")
     parser.add_argument('-s', '--speed-surface', metavar='GEOTIFF',
                         help="load speed surface from GEOTIFF")
-    parser.add_argument('-l', '--show-health-services', default=False,
+    parser.add_argument('-l', '--show-destination-locations', default=False,
                         action="store_true",
-                        help="show locations of helth services")
+                        help="show locations of destinations")
     parser.add_argument('-o', '--output', metavar='FILE',
                         help="save figure to FILE")
     args = parser.parse_args()
@@ -59,11 +59,11 @@ def main():
     ax.gridlines(draw_labels=True)
     ax.add_feature(cartopy.feature.BORDERS)
 
-    if args.show_health_services:
-        health = geopandas.read_file(
-            cfg.health_care,
+    if args.show_destination_locations:
+        destinations = geopandas.read_file(
+            cfg.destinations,
             bbox=data.rio.bounds()).to_crs(epsg=cfg.epsg_code)
-        health.plot(ax=ax, marker='o', markersize=5, color='black')
+        destinations.plot(ax=ax, marker='o', markersize=5, color='black')
 
     if args.output is not None:
         pyplot.savefig(args.output)
