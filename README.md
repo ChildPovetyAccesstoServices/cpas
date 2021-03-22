@@ -24,14 +24,14 @@ python3 -m venv /PATH/TO/VENV --system-site-packages
 # install code
 python setup.py install
 # and run it
-cpas-create CFG
+cpas-compute CFG
 cpas-path CFG
 cpas-plot CFG
 ```
 
 You can also run the programs directly without having to install them first:
 ```
-python3 -m cpas.creation CFG
+python3 -m cpas.compute CFG
 python3 -m cpas.least_cost_path CFG
 python3 -m cpas.plot CFG
 ```
