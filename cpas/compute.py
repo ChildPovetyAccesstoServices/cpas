@@ -54,13 +54,22 @@ def main():
     cfg.read(sys.argv[1])
 
     # load the landcover - speedmap and the landcover dataset
-    lc_speedmap = costsurface.readLandcoverSpeedMap(cfg.landcover_ws)
+    lc_speedmap = costsurface.readLandcoverSpeedMap(
+        cfg.landcover_ws,
+        landcover=cfg.landcover_cfg['landcover_type_column'],
+        speed=cfg.landcover_cfg['speed_column']
+    )
     landcover = rioxarray.open_rasterio(cfg.landcover, masked=True)
     # compute the speed surface due to the landcover
     lws = costsurface.applyLandcoverSpeedMap(landcover, lc_speedmap)
 
     # load the road - speedmap and the road dataset
-    r_speedmap = costsurface.readRoadSpeedMap(cfg.roads_ws)
+    r_speedmap = costsurface.readRoadSpeedMap(
+        cfg.roads_ws,
+        road=cfg.roads_cfg['road_type_column'],
+        speed=cfg.roads_cfg['speed_column']
+    )
+
     roads = fiona.open(cfg.roads)
     rws = costsurface.rasterizeAllRoads(roads, landcover, r_speedmap)
 
