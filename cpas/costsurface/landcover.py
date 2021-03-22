@@ -92,7 +92,11 @@ if __name__ == '__main__':
     cfg = CpasConfig()
     cfg.read(sys.argv[1])
 
-    speedmap = readLandcoverSpeedMap(cfg.landcover_ws)
+    speedmap = readLandcoverSpeedMap(
+        cfg.landcover_ws,
+        landcover=cfg.landcover_cfg['landcover_type_column'],
+        speed=cfg.landcover_cfg['speed_column']
+    )
 
     landtype = rioxarray.open_rasterio(cfg.landcover, masked=True)
 

@@ -159,7 +159,11 @@ if __name__ == '__main__':
     cfg = CpasConfig()
     cfg.read(sys.argv[1])
 
-    road_speed_map = readRoadSpeedMap(cfg.roads_ws)
+    road_speed_map = readRoadSpeedMap(
+        cfg.roads_ws,
+        road=cfg.roads_cfg['road_type_column'],
+        speed=cfg.roads_cfg['speed_column']
+    )
 
     roads = fiona.open(cfg.roads)
     landtype = rioxarray.open_rasterio(cfg.landcover, masked=True)
