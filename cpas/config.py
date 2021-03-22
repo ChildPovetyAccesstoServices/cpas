@@ -29,19 +29,28 @@ inputbase = string
 [[landcover]]
 # name of tiff file containing landcover
 name = string
+# a csv file containing the landcover type to speed map
+speeds = string
+# the name of the column containing the land cover types
+landcover_type_column = string(default=Code)
+# the name of the column containing the speeds
+speed_column = string(default=Walking Speed (km/h))
 
 [[roads]]
 # name of shape file containing roads
 name = string
+#  a csv file containing the roads type to speed map
+speeds = string
+# the name of the column containing the road types
+road_type_column = string(default=Feature_Class)
+# the name of the column containing the speeds
+speed_column = string(default=Walking_Speed)
 
 [[dem]]
 # name of tiff file containing DEM
 name = string
 
 [[walking_speeds]]
-# walking speed
-landcover_ws = string
-roads_ws = string
 # factor applied to walking speed when walking with children
 child_impact = float(default=0.78)
 # Water speed for water passable layer
@@ -52,6 +61,8 @@ waterspeed = float(default=1.5)
 name = string
 # whether to include small paths
 include_small_paths = boolean(default=True)
+# tag describing name of destination
+tag = string(default=Facility_n)
 
 [outputs]
 # base path for output files
@@ -98,9 +109,47 @@ class CpasConfig:
             msg = f'Could not read config file {fname}'
             raise RuntimeError(msg)
 
+        self._landcover_cfg = None
+        self._roads_cfg = None
+        self._destinations_cfg = None
+
     @property
     def cfg(self):
         return self._cfg
+
+    @property
+    def landcover_cfg(self):
+        if self._landcover_cfg is None:
+            self._landcover_cfg = {}
+            for f in ['name', 'speeds']:
+                self._landcover_cfg[f] = \
+                    self.inputbase / Path(self.cfg['inputs']['landcover'][f])
+            for k in ['landcover_type_column', 'speed_column']:
+                self._landcover_cfg[k] = self.cfg['inputs']['landcover'][k]
+        return self._landcover_cfg
+
+    @property
+    def destinations_cfg(self):
+        if self._destinations_cfg is None:
+            self._destinations_cfg = {}
+            self._destinations_cfg['name'] = \
+                self.inputbase /\
+                Path(self.cfg['inputs']['destinations']['name'])
+            for k in ['include_small_paths', 'tag']:
+                self._destinations_cfg[k] = \
+                    self.cfg['inputs']['destinations'][k]
+        return self._destinations_cfg
+
+    @property
+    def roads_cfg(self):
+        if self._roads_cfg is None:
+            self._roads_cfg = {}
+            for f in ['name', 'speeds']:
+                self._roads_cfg[f] = \
+                    self.inputbase / Path(self.cfg['inputs']['roads'][f])
+            for k in ['road_type_column', 'speed_column']:
+                self._roads_cfg[k] = self.cfg['inputs']['roads'][k]
+        return self._roads_cfg
 
     @property
     def inputbase(self):
@@ -108,12 +157,11 @@ class CpasConfig:
 
     @property
     def landcover(self):
-        return str(
-            self.inputbase / Path(self.cfg['inputs']['landcover']['name']))
+        return str(self.landcover_cfg['name'])
 
     @property
     def roads(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['roads']['name']))
+        return str(self.roads_cfg['name'])
 
     @property
     def dem(self):
@@ -121,18 +169,15 @@ class CpasConfig:
 
     @property
     def landcover_ws(self):
-        return str(self.inputbase / Path(
-            self.cfg['inputs']['walking_speeds']['landcover_ws']))
+        return str(self.landcover_cfg['speeds'])
 
     @property
     def roads_ws(self):
-        return str(self.inputbase / Path(
-            self.cfg['inputs']['walking_speeds']['roads_ws']))
+        return str(self.roads_cfg['speeds'])
 
     @property
     def destinations(self):
-        return str(
-            self.inputbase / Path(self.cfg['inputs']['destinations']['name']))
+        return str(self.destinations_cfg['name'])
 
     @property
     def child_impact(self):
@@ -140,7 +185,7 @@ class CpasConfig:
 
     @property
     def include_small_paths(self):
-        return self.cfg['inputs']['destinations']['include_small_paths']
+        return self.destinations_cfg['include_small_paths']
 
     @property
     def waterspeed(self):
@@ -197,3 +242,7 @@ if __name__ == '__main__':
               'costsurface', 'costsurface_water', 'invalid_loc',
               'invalid_loc_water', 'take_max_road_speed', 'epsg_code']:
         print(c, getattr(cfg, c))
+
+    pprint(cfg.landcover_cfg)
+    pprint(cfg.roads_cfg)
+    pprint(cfg.destinations_cfg)
