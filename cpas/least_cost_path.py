@@ -86,7 +86,7 @@ def find_location_cells(destinations, cs):
     return start_cells, status
 
 
-def compute_cost_path(csname, dname, invalid_loc):
+def compute_cost_path(csname, dname, invalid_loc, tag='Facility_n'):
     """compute cost paths
 
     Parameters
@@ -94,6 +94,7 @@ def compute_cost_path(csname, dname, invalid_loc):
     csname: name of input costsurface file
     dname: name of file containing destination locations
     invalid_loc: name of file for storing invalid locations
+    tag: name of tag that contains the location name
     """
 
     # import both cost surfaces
@@ -117,7 +118,10 @@ def compute_cost_path(csname, dname, invalid_loc):
         print(f"found {count['i']} invalid locations")
     with open(invalid_loc, 'w') as invalid_out:
         for row in destinations[(destinations['status'] == 'i')].itertuples():
-            invalid_out.write(f'{row.Long},{row.Lat},"{row.Facility_n}"\n')
+            invalid_out.write(f'{row.Long},{row.Lat}')
+            if hasattr(row, tag):
+                invalid_out.write(',"{}"'.format(getattr(row, tag)))
+            invalid_out.write('\n')
 
     # find costs algorithm does not deal with np.NaN so change these
     # to -9999 in cost surface any negative values are ignored
@@ -138,9 +142,11 @@ def main():
     cfg.read(sys.argv[1])
 
     # repeat the above with water passable cost surface
-    cp = compute_cost_path(cfg.costsurface, cfg.destinations, cfg.invalid_loc)
+    cp = compute_cost_path(cfg.costsurface, cfg.destinations, cfg.invalid_loc,
+                           tag=cfg.destinations_cfg['tag'])
     cw = compute_cost_path(cfg.costsurface_water, cfg.destinations,
-                           cfg.invalid_loc_water)
+                           cfg.invalid_loc_water,
+                           tag=cfg.destinations_cfg['tag'])
 
     # bring both access layers together for output
     cp = xarray.where(cp.isnull(), cw, cp)
