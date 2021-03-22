@@ -25,27 +25,33 @@ defaultCfgStr = """
 [inputs]
 # base path to input files, all inputs are relative to this directory
 inputbase = string
+
+[[landcover]]
 # name of tiff file containing landcover
-landcover = string
+name = string
+
+[[roads]]
 # name of shape file containing roads
-roads = string
+name = string
+
+[[dem]]
 # name of tiff file containing DEM
-dem = string
+name = string
+
+[[walking_speeds]]
 # walking speed
 landcover_ws = string
 roads_ws = string
-# destination locations such as health care centres
-destinations = string
-
 # factor applied to walking speed when walking with children
 child_impact = float(default=0.78)
-
-# whether to include small paths
-include_small_paths = boolean(default=True)
-
 # Water speed for water passable layer
 waterspeed = float(default=1.5)
 
+[[destinations]]
+# destination locations such as health care centres
+name = string
+# whether to include small paths
+include_small_paths = boolean(default=True)
 
 [outputs]
 # base path for output files
@@ -64,7 +70,7 @@ take_max_road_speed = bool(default=True)
 
 [plotting]
 # map projection for plotting
-epsg_code = string(default=32635)
+epsg_code = string(default=4326)
 """
 
 cpasDefaults = ConfigObj(defaultCfgStr.split('\n'),
@@ -102,39 +108,43 @@ class CpasConfig:
 
     @property
     def landcover(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['landcover']))
+        return str(
+            self.inputbase / Path(self.cfg['inputs']['landcover']['name']))
 
     @property
     def roads(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['roads']))
+        return str(self.inputbase / Path(self.cfg['inputs']['roads']['name']))
 
     @property
     def dem(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['dem']))
+        return str(self.inputbase / Path(self.cfg['inputs']['dem']['name']))
 
     @property
     def landcover_ws(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['landcover_ws']))
+        return str(self.inputbase / Path(
+            self.cfg['inputs']['walking_speeds']['landcover_ws']))
 
     @property
     def roads_ws(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['roads_ws']))
+        return str(self.inputbase / Path(
+            self.cfg['inputs']['walking_speeds']['roads_ws']))
 
     @property
     def destinations(self):
-        return str(self.inputbase / Path(self.cfg['inputs']['destinations']))
+        return str(
+            self.inputbase / Path(self.cfg['inputs']['destinations']['name']))
 
     @property
     def child_impact(self):
-        return self.cfg['inputs']['child_impact']
+        return self.cfg['inputs']['walking_speeds']['child_impact']
 
     @property
     def include_small_paths(self):
-        return self.cfg['inputs']['include_small_paths']
+        return self.cfg['inputs']['destinations']['include_small_paths']
 
     @property
     def waterspeed(self):
-        return self.cfg['inputs']['waterspeed']
+        return self.cfg['inputs']['walking_speeds']['waterspeed']
 
     @property
     def outputbase(self):
