@@ -193,7 +193,10 @@ class CpasConfig:
 
     @property
     def outputbase(self):
-        return Path(self.cfg['outputs']['outputbase'])
+        base = Path(self.cfg['outputs']['outputbase'])
+        if not base.exists():
+            base.mkdir(parents=True)
+        return base
 
     @property
     def costsurface(self):
