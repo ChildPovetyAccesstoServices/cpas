@@ -15,6 +15,7 @@
 #
 # Copyright (C) 2020 cpas team
 
+import logging
 import sys
 
 import rioxarray
@@ -49,6 +50,7 @@ def speed_to_cost(speed, child_impact=1):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
     cfg = CpasConfig()
     cfg.read(sys.argv[1])
@@ -59,8 +61,10 @@ def main():
         landcover=cfg.landcover_cfg['landcover_type_column'],
         speed=cfg.landcover_cfg['speed_column']
     )
+    logging.info('loading landcovers')
     landcover = rioxarray.open_rasterio(cfg.landcover, masked=True)
     # compute the speed surface due to the landcover
+    logging.info('constructing landcover speed cost surface')
     lws = costsurface.applyLandcoverSpeedMap(landcover, lc_speedmap)
 
     # load the road - speedmap and the road dataset
@@ -69,13 +73,16 @@ def main():
         road=cfg.roads_cfg['road_type_column'],
         speed=cfg.roads_cfg['speed_column']
     )
-
+    logging.info('loading roads')
     roads = fiona.open(cfg.roads)
+    logging.info('constructing road speed cost surface')
     rws = costsurface.rasterizeAllRoads(roads, landcover, r_speedmap)
 
     # compute the slope impact and resample it
+    logging.info('loading DEM')
     dem = rioxarray.open_rasterio(cfg.dem,
                                   masked=True).rio.reproject_match(lws)
+    logging.info('computing slope')
     slope_impact = costsurface.computeSlopeImpact(dem)
     # make sure coordinates are the same
     # there might be some numerical noise after reprojecting the data
@@ -83,16 +90,26 @@ def main():
     slope_impact['y'] = lws['y']
 
     # combine the two speed surfaces
+    logging.info('combine cost surfaces')
     ws = xarray.where(rws.notnull(), rws, lws)
 
+    # remove some of the large objects to free up some memory
+    logging.info('tidy up some space')
+    del dem
+    del lws
+    del rws
+
     # compute cost surface
+    logging.info('constructing cost surface')
     cs = speed_to_cost(ws * slope_impact, cfg.child_impact)
 
     # write costsurface
+    logging.info('writing cost surface')
     cs.rio.to_raster(cfg.costsurface)
 
     # consider water being passable
     # 10 is the code for open water
+    logging.info('constructing water cost surface')
     water = xarray.where(landcover == 10, cfg.waterspeed, numpy.NaN)
     # convert water speed to time
     # 1 as children arnt slower than adults on motor boats...
@@ -100,6 +117,7 @@ def main():
     cs = xarray.where(water.notnull(), water, cs)
 
     # write output
+    logging.info('writing water cost surface')
     cs.rio.to_raster(cfg.costsurface_water)
 
 
