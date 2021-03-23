@@ -53,3 +53,14 @@ optional arguments:
                         save figure to FILE
 ```
 
+
+Installation into a Conda Environment
+-------------------------------------
+Once a python 3.8 evironment has been created and activated install the dependencies using
+```
+conda install fuzzywuzzy numpy pandas  scikit-image xarray configobj
+conda install rioxarray
+conda install fiona
+pip install geopandas
+```
+Then install cpas as above.
