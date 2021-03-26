@@ -20,6 +20,7 @@
 # https://scikit-image.org/docs/0.7.0/api/skimage.graph.mcp.html
 
 # Import packages
+import logging
 import sys
 import rioxarray
 import xarray
@@ -99,6 +100,7 @@ def compute_cost_path(csname, dname, invalid_loc, tag='Facility_n'):
 
     # import both cost surfaces
     # cost surface
+    logging.info('load cost surface')
     costsurface = rioxarray.open_rasterio(csname, masked=True)
 
     # import destination locations
@@ -107,6 +109,7 @@ def compute_cost_path(csname, dname, invalid_loc, tag='Facility_n'):
         bbox=costsurface.rio.bounds())
 
     # select destination locations that are valid to use with cost surface
+    logging.info('find locations')
     start_cells, status = find_location_cells(destinations, costsurface)
     destinations['status'] = status
     count = destinations.status.value_counts()
@@ -128,7 +131,8 @@ def compute_cost_path(csname, dname, invalid_loc, tag='Facility_n'):
     costsurface = costsurface.fillna(-9999)
     # cs.data = np.where(cs.data != cs.data, -9999, cs.data)
 
-    # # calculate the costs for each square in the grid
+    # calculate the costs for each square in the grid
+    logging.info('calculating costs')
     costs = service_area(costsurface, start_cells)
 
     costs = xarray.where(numpy.isfinite(costs), costs, numpy.nan)
@@ -137,20 +141,26 @@ def compute_cost_path(csname, dname, invalid_loc, tag='Facility_n'):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+
     # read configuration
     cfg = CpasConfig()
     cfg.read(sys.argv[1])
 
-    # repeat the above with water passable cost surface
+    logging.info('compute costs with water impassable')
     cp = compute_cost_path(cfg.costsurface, cfg.destinations, cfg.invalid_loc,
                            tag=cfg.destinations_cfg['tag'])
+    # repeat the above with water passable cost surface
+    logging.info('compute costs with water passable')
     cw = compute_cost_path(cfg.costsurface_water, cfg.destinations,
                            cfg.invalid_loc_water,
                            tag=cfg.destinations_cfg['tag'])
 
     # bring both access layers together for output
+    logging.info('merge cost surface')
     cp = xarray.where(cp.isnull(), cw, cp)
 
+    logging.info('write result')
     cp.rio.to_raster(cfg.cost_path)
 
 
